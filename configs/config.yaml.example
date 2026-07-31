@@ -1,5 +1,8 @@
 interval: 30s
-
+interval: 5s
+log:
+  level: info
+  format: text  #json/text
 fail_threshold: 3
 success_threshold: 5
 

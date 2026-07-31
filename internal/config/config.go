@@ -5,6 +5,10 @@ import (
 
 	"dns-failover/internal/model"
 )
+type Log struct {
+	Level  string `yaml:"level"`
+	Format string `yaml:"format"`
+}
 
 type SupportLink struct {
 	Title string `yaml:"title"`
@@ -42,5 +46,6 @@ type Config struct {
 	Hosts []model.Host `yaml:"hosts"`
 	Telegram TelegramConfig `yaml:"telegram"`
 	Support Support `yaml:"support"`
+	Log Log `yaml:"log"`
 }
 

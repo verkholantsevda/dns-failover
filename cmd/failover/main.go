@@ -13,14 +13,23 @@ import (
 )
 
 func main() {
+
 	ctx := context.Background()
 
-	cfg, err := config.Load("configs/config.yaml")
+	cfg, err := config.Load(
+		"configs/config.yaml",
+	)
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	logg := logger.New()
+
+	logg := logger.New(
+		cfg.Log.Level,
+		cfg.Log.Format,
+	)
+
 
 	dnsProvider := dns.NewSelectel(
 		cfg.Selectel.AccountID,
@@ -29,15 +38,38 @@ func main() {
 		cfg.Selectel.Password,
 	)
 
+
+	// Конвертация config.Support -> notifier.Support
+	support := notifier.Support{
+		Enabled: cfg.Support.Enabled,
+	}
+
+
+	for _, link := range cfg.Support.Links {
+
+		support.Links = append(
+			support.Links,
+			notifier.SupportLink{
+				Title: link.Title,
+				URL:   link.URL,
+			},
+		)
+	}
+
+
 	telegram := notifier.NewTelegram(
 		cfg.Telegram.Token,
 		cfg.Telegram.ChatID,
+		"internal/notifier/images",
+		support,
 	)
+
 
 	fail := &failover.Failover{
 		Provider: dnsProvider,
-		Telegram: telegram,
+		Notifier: telegram,
 	}
+
 
 	m := monitor.New(
 		ctx,
@@ -45,6 +77,7 @@ func main() {
 		logg,
 		fail,
 	)
+
 
 	m.Run(ctx)
 }
