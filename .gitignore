@@ -3,3 +3,4 @@
 
 *.log
 configs/config.yaml
+internal/notifier/images/*

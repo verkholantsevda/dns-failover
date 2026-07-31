@@ -7,6 +7,13 @@ telegram:
   token: "TOKEN"
   chat_id: chat_id
 
+support:
+  enabled: true
+  links:
+    - title: "Донаты"
+      url: "https://example.com/donate"
+    - title: "Поддержка проекта"
+      url: "https://example.com/support"
 
 selectel:
   account_id: "account_id"

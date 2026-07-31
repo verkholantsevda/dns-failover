@@ -6,6 +6,16 @@ import (
 	"dns-failover/internal/model"
 )
 
+type SupportLink struct {
+	Title string `yaml:"title"`
+	URL   string `yaml:"url"`
+}
+
+type Support struct {
+	Enabled bool          `yaml:"enabled"`
+	Links   []SupportLink `yaml:"links"`
+}
+
 type Selectel struct {
 	AccountID string `yaml:"account_id"`
 	ProjectName string `yaml:"project_name"`
@@ -31,5 +41,6 @@ type Config struct {
 	Selectel Selectel `yaml:"selectel"`
 	Hosts []model.Host `yaml:"hosts"`
 	Telegram TelegramConfig `yaml:"telegram"`
+	Support Support `yaml:"support"`
 }
 
