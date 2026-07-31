@@ -129,6 +129,13 @@ telegram:
   token: "BOT_TOKEN"
   chat_id: 123456789
 
+support:
+  enabled: true
+  links:
+    - title: "Донаты"
+      url: "https://example.com/donate"
+    - title: "Поддержка проекта"
+      url: "https://example.com/support"
 
 prometheus:
   url: "http://prometheus:9090"
