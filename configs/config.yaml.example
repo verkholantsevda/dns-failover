@@ -1,0 +1,39 @@
+interval: 30s
+
+fail_threshold: 3
+success_threshold: 5
+
+telegram:
+  token: "TOKEN"
+  chat_id: chat_id
+
+
+selectel:
+  account_id: "account_id"
+  project_name: "project_name"
+  username: "user"
+  password: "password"
+
+
+prometheus:
+  url: http://localhost:9090
+
+hosts:
+
+  - name: server_name
+    icmp_host: server_name.example.com
+    prometheus:
+      job: noe
+      instance: server_name.example.com
+    dns:
+      zone: zone_id
+      record: server_name.example.com.
+      records:
+        - ip: IP_1
+          country: COUNTRY_CODE_1 (RU)
+          priority: 1
+          disabled: false
+        - ip: IP_2
+          priority: 2
+          disabled: false
+          country: COUNTRY_CODE_1 (DE)
