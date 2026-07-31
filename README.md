@@ -113,6 +113,10 @@ go build -o dns-failover ./cmd/failover
 ```yaml
 interval: 30s
 
+log:
+  level: info
+  format: text  #json/text
+
 fail_threshold: 3
 
 success_threshold: 3
@@ -237,44 +241,45 @@ curl https://api.telegram.org/bot<TOKEN>/getUpdates
 
 ## Структура проекта
 
-```
 dns-failover/
-
-├── cmd/
+│
+├── cmd/                         # Точки входа приложения (исполняемые программы)
 │   └── failover/
-│       └── main.go
+│       └── main.go              # Запуск сервиса: загрузка конфига, инициализация компонентов, старт мониторинга
 │
-├── configs/
-│   └── config.yaml.example
+├── configs/                     # Конфигурационные файлы
+│   └── config.yaml.example      # Пример конфигурации: DNS, Telegram, Prometheus, логирование
 │
-├── internal/
+├── internal/                    # Внутренние пакеты приложения (не доступны извне)
 │
-│   ├── checker/
-│   │   ├── icmp.go
-│   │   └── metrics.go
-│   │
-│   ├── config/
-│   │   └── loader.go
-│   │
-│   ├── dns/
-│   │   ├── provider.go
-│   │   └── selectel.go
-│   │
-│   ├── failover/
-│   │   └── failover.go
-│   │
-│   ├── notifier/
-│   │   ├── telegram.go
-│   │   └── flags.go
-│   │
-│   ├── monitor/
-│   │   └── monitor.go
-│   │
-│   └── state/
-│       └── state.go
+│   ├── checker/                 # Проверки доступности серверов
+│   │   ├── icmp.go              # ICMP/Ping проверка доступности узла
+│   │   └── metrics.go           # Проверка состояния через Prometheus API
 │
-└── go.mod
-```
+│   ├── config/                  # Работа с конфигурацией
+│   │   └── loader.go            # Загрузка и разбор config.yaml
+│
+│   ├── dns/                     # Работа с DNS-провайдерами
+│   │   ├── provider.go          # Интерфейс DNS-провайдера
+│   │   └── selectel.go          # Реализация управления DNS Selectel API
+│
+│   ├── failover/                # Логика переключения DNS
+│   │   └── failover.go          # Отключение основного IP, включение резервного, уведомления
+│
+│   ├── notifier/                # Уведомления
+│   │   ├── telegram.go          # Отправка сообщений и изображений через Telegram Bot API
+│   │   └── flags.go             # Список стран, флаги и названия регионов
+│
+│   ├── monitor/                 # Основной цикл мониторинга
+│   │   └── monitor.go           # Проверка серверов, обработка состояний, запуск failover/recovery
+│
+│   ├── logger/                  # Система логирования
+│   │   └── logger.go            # Настройка slog: уровень (debug/info/warn/error) и формат (text/json)
+│
+│   └── state/                   # Хранение состояния
+│       └── state.go             # Состояние хоста: активный IP, количество успешных/неуспешных проверок
+│
+└── go.mod                       # Описание Go-модуля и зависимостей
 
 ## Безопасность
 
