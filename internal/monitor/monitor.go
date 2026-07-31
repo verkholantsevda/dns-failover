@@ -8,8 +8,9 @@ import (
 
 	"dns-failover/internal/checker"
 	"dns-failover/internal/config"
-	"dns-failover/internal/dns"
+	"dns-failover/internal/failover"
 	"dns-failover/internal/state"
+	"dns-failover/internal/dns"
 )
 
 type Monitor struct {
@@ -19,7 +20,7 @@ type Monitor struct {
 	metrics checker.MetricsChecker
 	icmp    checker.ICMPChecker
 
-	dns dns.Provider
+	failover *failover.Failover
 
 	states map[string]*state.HostState
 }
@@ -28,28 +29,15 @@ func New(
 	ctx context.Context,
 	cfg *config.Config,
 	log *slog.Logger,
-	dnsProvider dns.Provider,
+	failover *failover.Failover,
 ) *Monitor {
 
 	states := make(map[string]*state.HostState)
 	for _, host := range cfg.Hosts {
-		currentIP, err := dnsProvider.GetRecord(
-			ctx,
-			host.DNS.Zone,
-			host.DNS.Record,
-		)
-		if err != nil {
-			log.Error(
-				"failed to get current dns record",
-				"host",
-				host.Name,
-				"error",
-				err,
-			)
-			// fallback из конфига
-			if len(host.DNS.Records) > 0 {
-				currentIP = host.DNS.Records[0].IP
-			}
+		currentIP := ""
+
+		if len(host.DNS.Records) > 0 {
+			currentIP = host.DNS.Records[0].IP
 		}
 
 		states[host.Name] = &state.HostState{
@@ -72,7 +60,7 @@ func New(
 		),
 
 		icmp: checker.NewPingChecker(),
-		dns: dnsProvider,
+		failover: failover,
 		states: states,
 	}
 }
@@ -166,34 +154,42 @@ func (m *Monitor) checkHosts(ctx context.Context) {
 					"host",
 					host.Name,
 				)
-				primaryIP := dns.PrimaryIP(
-					host.DNS.Records,
-				)
+				primaryIP := host.DNS.Records[0].IP
+
 				if primaryIP != hostState.ActiveIP {
-					err := m.dns.UpdateRecord(
+
+					records, err := m.failover.Provider.GetRecords(
 						ctx,
 						host.DNS.Zone,
 						host.DNS.Record,
-						primaryIP,
 					)
+
+					if err != nil {
+						continue
+					}
+
+
+					for i := range records {
+						records[i].Disabled = records[i].IP != primaryIP
+					}
+
+
+					err = m.failover.Switch(
+						ctx,
+						host,
+						records,
+					)
+
 					if err != nil {
 						m.log.Error(
 							"dns restore failed",
-							"host",
-							host.Name,
 							"error",
 							err,
 						)
 						continue
 					}
+
 					hostState.ActiveIP = primaryIP
-					m.log.Info(
-						"dns restored",
-						"host",
-						host.Name,
-						"ip",
-						primaryIP,
-					)
 				}
 			}
 		} else {
@@ -219,12 +215,36 @@ func (m *Monitor) checkHosts(ctx context.Context) {
 					)
 					continue
 				}
-				err := m.dns.UpdateRecord(
+				records, err := m.failover.Provider.GetRecords(
 					ctx,
 					host.DNS.Zone,
 					host.DNS.Record,
-					nextIP,
 				)
+
+				if err != nil {
+					continue
+				}
+
+
+				for i := range records {
+					records[i].Disabled = records[i].IP != nextIP
+				}
+
+
+				err = m.failover.Switch(
+					ctx,
+					host,
+					records,
+				)
+
+				if err != nil {
+					m.log.Error(
+						"dns switch failed",
+						"error",
+						err,
+					)
+					continue
+				}
 				if err != nil {
 					m.log.Error(
 						"dns switch failed",
