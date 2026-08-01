@@ -105,27 +105,16 @@ func (f *Failover) Restore(
 		return err
 	}
 
-
-
-	var from model.Record
 	var to model.Record
-
-
 	for _, r := range records {
-
-		if r.Disabled {
-			from = r
-		} else {
+		if !r.Disabled {
 			to = r
+			break
 		}
-
 	}
-
-
 
 	return f.Notifier.SendRecovery(
 		ctx,
-		from.Country,
 		to.Country,
 	)
 }

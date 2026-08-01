@@ -23,7 +23,6 @@ func SupportMessage(
 
 	message := `
 <tg-spoiler>
-💙 Поддержать проект:
 Если сервис оказался полезным, вы можете поддержать его развитие:
 `
 
@@ -71,25 +70,21 @@ func FailoverMessage(
 }
 
 func RecoveryMessage(
-	fromCountry string,
 	toCountry string,
 	support Support,
 ) string {
 
-	fromFlag, fromName := countryInfo(fromCountry)
 	toFlag, toName := countryInfo(toCountry)
 
 	return fmt.Sprintf(
-	`%s WARP %s
+`%s WARP %s
 
 Основной сервер восстановлен.
-Трафик возвращен обратно на %s %s.
+
+Трафик автоматически возвращен на основной маршрут.
 
 Соединение работает в штатном режиме.
-
 %s`,
-		fromFlag,
-		fromName,
 		toFlag,
 		toName,
 		SupportMessage(support),

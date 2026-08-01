@@ -231,12 +231,10 @@ func (t *Telegram) SendFailover(
 // Уведомление о восстановлении
 func (t *Telegram) SendRecovery(
 	ctx context.Context,
-	fromCountry string,
 	toCountry string,
 ) error {
 
 	message := RecoveryMessage(
-		fromCountry,
 		toCountry,
 		t.Support,
 	)

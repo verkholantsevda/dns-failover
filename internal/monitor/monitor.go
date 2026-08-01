@@ -290,7 +290,7 @@ func (m *Monitor) checkHosts(ctx context.Context) {
 			}
 
 
-			err = m.failover.Switch(
+			err = m.failover.Restore(
 				ctx,
 				host,
 				records,

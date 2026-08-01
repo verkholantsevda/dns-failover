@@ -16,7 +16,6 @@ type Notifier interface {
 
 	SendRecovery(
 		ctx context.Context,
-		fromCountry string,
 		toCountry string,
 	) error
 }
