@@ -1,49 +1,57 @@
 interval: 30s
-interval: 5s
 log:
   level: info
   format: text  #json/text
-fail_threshold: 3
-success_threshold: 5
+
+fail_threshold: 7
+success_threshold: 10
 
 telegram:
-  token: "TOKEN"
+  enabled: true
+  token: "token"
   chat_id: chat_id
+ntfy:
+  enabled: true
+  url: https://ntfy.sh
+  topic: topic_name
+  #token:
 
 support:
   enabled: true
   links:
-    - title: "Донаты"
-      url: "https://example.com/donate"
-    - title: "Поддержка проекта"
-      url: "https://example.com/support"
+    - title: "CloudTips"
+      url: "https://pay.cloudtips.ru/p/123456"
+    - title: "Yoomoney"
+      url: "https://yoomoney.ru/to/1234567890"
 
 selectel:
-  account_id: "account_id"
-  project_name: "project_name"
-  username: "user"
+  account_id: "XXXXXX"
+  project_name: "name"
+  username: "username"
   password: "password"
 
 
 prometheus:
   url: http://localhost:9090
 
-hosts:
 
-  - name: server_name
-    icmp_host: server_name.example.com
+hosts:
+  - name: host
+    country: SE
     prometheus:
-      job: noe
-      instance: server_name.example.com
+      job: integrations/node_exporter
+      instance: xx.domain.com.
     dns:
       zone: zone_id
-      record: server_name.example.com.
-      records:
-        - ip: IP_1
-          country: COUNTRY_CODE_1 (RU)
-          priority: 1
-          disabled: false
-        - ip: IP_2
-          priority: 2
-          disabled: false
-          country: COUNTRY_CODE_1 (DE)
+      record: xx.domain.com.
+      ip: XXX.XXX.XXX.XXX
+
+  - name: host2
+    country: EE
+    prometheus:
+      job: integrations/node_exporter
+      instance: yy.domain.com
+    dns:
+      zone: zone_id
+      record: yy.domain.com.
+      ip: XXX.XXX.XXX.XXX

@@ -1,21 +1,13 @@
 package notifier
 
-import "context"
+import (
+	"context"
+	"dns-failover/internal/model"
+)
 
 type Notifier interface {
-	Send(
-		ctx context.Context,
-		message string,
-	) error
-
-	SendFailover(
-		ctx context.Context,
-		fromCountry string,
-		toCountry string,
-	) error
-
-	SendRecovery(
-		ctx context.Context,
-		toCountry string,
-	) error
+	SendFailover(ctx context.Context, host model.Host, backup model.Host) error
+	SendRecovery(ctx context.Context, host model.Host) error
+	SendICMPDown(ctx context.Context, host model.Host) error
+	SendICMPUp(ctx context.Context, host model.Host) error
 }

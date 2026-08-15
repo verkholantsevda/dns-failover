@@ -28,8 +28,16 @@ type Selectel struct {
 }
 
 type TelegramConfig struct {
+	Enabled bool   `yaml:"enabled"`
 	Token  string `yaml:"token"`
 	ChatID int64  `yaml:"chat_id"`
+}
+
+type NtfyConfig struct {
+    Enabled bool   `yaml:"enabled"`
+    URL     string `yaml:"url"`
+    Topic   string `yaml:"topic"`
+    Token   string `yaml:"token"`
 }
 
 type Config struct {
@@ -43,9 +51,11 @@ type Config struct {
         URL string `yaml:"url"`
     } `yaml:"prometheus"`
 	Selectel Selectel `yaml:"selectel"`
+	NtfyConfig NtfyConfig `yaml:"ntfy"`
 	Hosts []model.Host `yaml:"hosts"`
 	Telegram TelegramConfig `yaml:"telegram"`
 	Support Support `yaml:"support"`
 	Log Log `yaml:"log"`
+
 }
 

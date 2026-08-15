@@ -2,91 +2,55 @@ package notifier
 
 import "fmt"
 
-func countryInfo(code string) (string, string) {
-
-	country, ok := Countries[code]
-
-	if !ok {
-		return "🏳️", code
-	}
-
-	return country.Flag, country.Name
-}
-
-func SupportMessage(
-	support Support,
-) string {
-
+func SupportMessage(support Support) string {
 	if !support.Enabled || len(support.Links) == 0 {
 		return ""
 	}
-
 	message := `
 <tg-spoiler>
 Если сервис оказался полезным, вы можете поддержать его развитие:
 `
-
 	for _, link := range support.Links {
-
-		message += fmt.Sprintf(
-			"\n🔗 <a href=\"%s\">%s</a>",
-			link.URL,
-			link.Title,
-		)
+		message += fmt.Sprintf("\n🔗 <a href=\"%s\">%s</a>", link.URL, link.Title)
 	}
-
 	message += `
 Спасибо за поддержку ❤️
 </tg-spoiler>`
-
 	return message
 }
 
-func FailoverMessage(
-	fromCountry string,
-	toCountry string,
-	support Support,
-) string {
-
+func FailoverMessage(fromCountry, toCountry string, support Support) string {
 	fromFlag, fromName := countryInfo(fromCountry)
 	toFlag, toName := countryInfo(toCountry)
-
 	return fmt.Sprintf(
-	`%s WARP %s
+		`%s WARP %s
 
-Из-за недоступности сервера
-
-трафик временно переключен на %s %s.
+На сервере возникли неполадки.
+Чтобы вы могли продолжать пользоваться сервисов без перебоев,
+мы временно перенаправили трафик на %s %s.
 Соединение продолжает работать в штатном режиме.
 
-Мы автоматически вернем маршрут после восстановления сервера.
+Все работает штатно. Как только основной сервер восстановится,
+мы автоматически вернем маршрут обратно,
 %s`,
-		fromFlag,
-		fromName,
-		toFlag,
-		toName,
+		fromFlag, fromName,
+		toFlag, toName,
 		SupportMessage(support),
 	)
 }
 
-func RecoveryMessage(
-	toCountry string,
-	support Support,
-) string {
-
+func RecoveryMessage(toCountry string, support Support) string {
 	toFlag, toName := countryInfo(toCountry)
-
 	return fmt.Sprintf(
-`%s WARP %s
+		`%s WARP %s
 
 Основной сервер восстановлен.
 
-Трафик автоматически возвращен на основной маршрут.
+Мы вернули трафик обратно на основной маршрут.
 
-Соединение работает в штатном режиме.
+Все в порядке, можете продолжать пользоваться сервисом.
 %s`,
-		toFlag,
-		toName,
+		toFlag, toName,
 		SupportMessage(support),
 	)
 }

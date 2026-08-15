@@ -22,8 +22,12 @@ var Countries = map[string]Country{
 		Flag: "🇩🇪",
 	},
 
-	"EST": {
+	"EE": {
 		Name: "Estonia",
 		Flag: "🇪🇪",
+	},
+	"GB": {
+		Name: "Greate Britian",
+		Flag: "🇬🇧",
 	},
 }

@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"dns-failover/internal/model"
 )
 
 type Telegram struct {
@@ -21,19 +23,12 @@ type Telegram struct {
 	Client   *http.Client
 }
 
-func NewTelegram(
-	token string,
-	chatID int64,
-	imageURL string,
-	support Support,
-) *Telegram {
-
+func NewTelegram(token string, chatID int64, imageURL string, support Support) *Telegram {
 	return &Telegram{
 		Token:    token,
 		ChatID:   chatID,
 		ImageURL: imageURL,
 		Support:  support,
-
 		Client: &http.Client{
 			Timeout: 15 * time.Second,
 			Transport: &http.Transport{
@@ -43,12 +38,7 @@ func NewTelegram(
 	}
 }
 
-func (t *Telegram) sendImage(
-	ctx context.Context,
-	imagePath string,
-	caption string,
-) error {
-
+func (t *Telegram) sendImage(ctx context.Context, imagePath string, caption string) error {
 	file, err := os.Open(imagePath)
 	if err != nil {
 		return err
@@ -58,190 +48,89 @@ func (t *Telegram) sendImage(
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	if err := writer.WriteField(
-		"chat_id",
-		fmt.Sprintf("%d", t.ChatID),
-	); err != nil {
+	if err := writer.WriteField("chat_id", fmt.Sprintf("%d", t.ChatID)); err != nil {
+		return err
+	}
+	if err := writer.WriteField("caption", caption); err != nil {
+		return err
+	}
+	if err := writer.WriteField("parse_mode", "HTML"); err != nil {
 		return err
 	}
 
-	if err := writer.WriteField(
-		"caption",
-		caption,
-	); err != nil {
-		return err
-	}
-
-	if err := writer.WriteField(
-		"parse_mode",
-		"HTML",
-	); err != nil {
-		return err
-	}
-
-	part, err := writer.CreateFormFile(
-		"photo",
-		filepath.Base(imagePath),
-	)
-
+	part, err := writer.CreateFormFile("photo", filepath.Base(imagePath))
 	if err != nil {
 		return err
 	}
-
-	_, err = io.Copy(
-		part,
-		file,
-	)
-
-	if err != nil {
+	if _, err := io.Copy(part, file); err != nil {
+		return err
+	}
+	if err := writer.Close(); err != nil {
 		return err
 	}
 
-	err = writer.Close()
-
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		fmt.Sprintf("https://api.telegram.org/bot%s/sendPhoto", t.Token), body)
 	if err != nil {
 		return err
 	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		fmt.Sprintf(
-			"https://api.telegram.org/bot%s/sendPhoto",
-			t.Token,
-		),
-		body,
-	)
+	fmt.Printf("[TELEGRAM] Sending image: %s, caption length: %d\n", imagePath, len(caption))
 
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set(
-		"Content-Type",
-		writer.FormDataContentType(),
-	)
-
-	fmt.Println("Content-Length:", body.Len())
-	fmt.Println("Image:", imagePath)
 	resp, err := t.Client.Do(req)
-
 	if err != nil {
-		return fmt.Errorf(
-			"telegram sendPhoto request failed: %w",
-			err,
-		)
+		return fmt.Errorf("telegram sendPhoto request failed: %w", err)
 	}
-
 	defer resp.Body.Close()
 
 	respBody, _ := io.ReadAll(resp.Body)
 
 	if resp.StatusCode >= 300 {
-
-		return fmt.Errorf(
-			"telegram sendPhoto failed: %s body=%s",
-			resp.Status,
-			string(respBody),
-		)
+		return fmt.Errorf("telegram sendPhoto failed: %s body=%s", resp.Status, string(respBody))
 	}
 
+	// Логируем успех
+	fmt.Printf("[TELEGRAM] Image sent successfully: %s\n", imagePath)
 	return nil
 }
 
-// Базовая отправка Telegram
-func (t *Telegram) Send(
-	ctx context.Context,
-	message string,
-) error {
-
+func (t *Telegram) Send(ctx context.Context, message string) error {
 	body := map[string]any{
 		"chat_id":    t.ChatID,
 		"text":       message,
 		"parse_mode": "HTML",
 	}
-
-	data, err := json.Marshal(body)
-
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		fmt.Sprintf(
-			"https://api.telegram.org/bot%s/sendMessage",
-			t.Token,
-		),
-		bytes.NewBuffer(data),
-	)
-
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set(
-		"Content-Type",
-		"application/json",
-	)
+	data, _ := json.Marshal(body)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost,
+		fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", t.Token), bytes.NewBuffer(data))
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := t.Client.Do(req)
-
 	if err != nil {
 		return err
 	}
-
 	defer resp.Body.Close()
-
 	respBody, _ := io.ReadAll(resp.Body)
-
 	if resp.StatusCode >= 300 {
-
-		return fmt.Errorf(
-			"telegram error: %s body=%s",
-			resp.Status,
-			string(respBody),
-		)
+		return fmt.Errorf("telegram error: %s body=%s", resp.Status, string(respBody))
 	}
-
 	return nil
 }
 
 // Уведомление о переключении
-func (t *Telegram) SendFailover(
-	ctx context.Context,
-	fromCountry string,
-	toCountry string,
-) error {
-
-	message := FailoverMessage(
-		fromCountry,
-		toCountry,
-		t.Support,
-	)
-
-	return t.sendImage(
-		ctx,
-		"internal/notifier/images/failover.jpg",
-		message,
-	)
+func (t *Telegram) SendFailover(ctx context.Context, host, backup model.Host) error {
+	fmt.Printf("[TELEGRAM] SendFailover called for host %s\n", host.Name)
+	message := FailoverMessage(host.Country, backup.Country, t.Support)
+	return t.sendImage(ctx, "internal/notifier/images/failover.jpg", message)
 }
 
-// Уведомление о восстановлении
-func (t *Telegram) SendRecovery(
-	ctx context.Context,
-	toCountry string,
-) error {
-
-	message := RecoveryMessage(
-		toCountry,
-		t.Support,
-	)
-
-	return t.sendImage(
-		ctx,
-		"internal/notifier/images/recovery.jpg",
-		message,
-	)
+func (t *Telegram) SendRecovery(ctx context.Context, host model.Host) error {
+	fmt.Printf("[TELEGRAM] SendRecovery called for host %s\n", host.Name)
+	message := RecoveryMessage(host.Country, t.Support)
+	return t.sendImage(ctx, "internal/notifier/images/recovery.jpg", message)
 }
+
+// ICMP-уведомления через Telegram не отправляем (заглушки)
+func (t *Telegram) SendICMPDown(ctx context.Context, host model.Host) error { return nil }
+func (t *Telegram) SendICMPUp(ctx context.Context, host model.Host) error   { return nil }
